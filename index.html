@@ -2,31 +2,154 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Information PDF Generator</title>
-    <!-- Link to CSS -->
-    <link rel="stylesheet" href="styles.css">
+    <title>Student Information Form to PDF</title>
+    <!-- Google Fonts for Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <!-- jsPDF Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- jsPDF AutoTable Plugin for Tables -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* Reset some default styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.85);
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="date"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.6);
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="date"]:focus {
+            border-color: #7a7afc;
+            outline: none;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: #7a7afc;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #5b5bdc;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px 25px;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
+
     <div class="container">
-        <h1>Generate Student Information PDF</h1>
-        <form id="studentForm">
+        <h2>Student Information Form</h2>
+        <form id="infoForm">
             <div class="form-group">
-                <label for="firstName">Name:</label>
-                <input type="text" id="firstName" name="firstName" required>
+                <label for="firstName">First Name:</label>
+                <input type="text" id="firstName" name="firstName" required placeholder="Enter your first name">
             </div>
             
             <div class="form-group">
                 <label for="lastName">Last Name:</label>
-                <input type="text" id="lastName" name="lastName" required>
+                <input type="text" id="lastName" name="lastName" required placeholder="Enter your last name">
             </div>
             
             <div class="form-group">
-                <label for="studentID">Student ID:</label>
-                <input type="text" id="studentID" name="studentID" required>
+                <label for="dob">Date of Birth:</label>
+                <input type="date" id="dob" name="dob" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required placeholder="example@university.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="university">University Name:</label>
+                <input type="text" id="university" name="university" required placeholder="Enter your university name">
+            </div>
+            
+            <div class="form-group">
+                <label for="faculty">Faculty Name:</label>
+                <input type="text" id="faculty" name="faculty" required placeholder="Enter your faculty name">
+            </div>
+            
+            <div class="form-group">
+                <label for="studentId">Student ID:</label>
+                <input type="text" id="studentId" name="studentId" required placeholder="Enter your student ID">
             </div>
             
             <div class="form-group">
@@ -34,11 +157,123 @@
                 <input type="date" id="date" name="date" required>
             </div>
             
-            <button type="button" id="generateBtn">Generate PDF</button>
+            <div class="button-container">
+                <button type="button" onclick="generatePDF()">Print Document</button>
+            </div>
         </form>
     </div>
 
-    <!-- Link to JavaScript -->
-    <script src="script.js"></script>
+    <script>
+        // Ensure jsPDF is loaded
+        window.jsPDF = window.jspdf.jsPDF;
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+
+            // Get form values
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const dob = document.getElementById('dob').value;
+            const email = document.getElementById('email').value.trim();
+            const university = document.getElementById('university').value.trim();
+            const faculty = document.getElementById('faculty').value.trim();
+            const studentId = document.getElementById('studentId').value.trim();
+            const date = document.getElementById('date').value;
+
+            // Basic validation
+            if (!firstName || !lastName || !dob || !email || !university || !faculty || !studentId || !date) {
+                alert('Please fill in all fields.');
+                return;
+            }
+
+            // Create a new jsPDF instance with landscape orientation and better units
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'pt',
+                format: 'a4'
+            });
+
+            // Define margins
+            const marginLeft = 40;
+            const marginTop = 60;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+
+            // Add University Logo (Placeholder)
+            // To add a logo, replace the following line with the path to your logo image
+            // Example: doc.addImage('path/to/logo.png', 'PNG', marginLeft, marginTop - 40, 50, 50);
+            // For demonstration, we'll draw a rectangle as a placeholder for the logo
+            doc.setFillColor(200, 200, 200);
+            doc.rect(marginLeft, marginTop - 50, 50, 50, 'F');
+            doc.setFontSize(10);
+            doc.text(`${university}, ${faculty}`, marginLeft + 15, marginTop - 30);
+
+            // Add Title
+            doc.setFontSize(20);
+            doc.setTextColor(50);
+            doc.text('Student Information', pageWidth / 2, marginTop, { align: 'center' });
+
+            // Add a line below the title
+            doc.setLineWidth(1);
+            doc.setDrawColor(150);
+            doc.line(marginLeft, marginTop + 10, pageWidth - marginLeft, marginTop + 10);
+
+            // Define the information to be added
+            const studentData = [
+                { label: 'First Name', value: firstName },
+                { label: 'Last Name', value: lastName },
+                { label: 'Date of Birth', value: formatDate(dob) },
+                { label: 'Email', value: email },
+                { label: 'University Name', value: university },
+                { label: 'Faculty Name', value: faculty },
+                { label: 'Student ID', value: studentId },
+                { label: 'Date', value: formatDate(date) }
+            ];
+
+            // Starting position for the table
+            const startY = marginTop + 30;
+
+            // Use AutoTable to create a table for the information
+            doc.autoTable({
+                startY: startY,
+                margin: { left: marginLeft, right: marginLeft },
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 12,
+                    cellPadding: 8,
+                    halign: 'left',
+                    valign: 'middle',
+                },
+                head: [['Field', 'Information']],
+                body: studentData.map(item => [item.label, item.value]),
+                theme: 'striped',
+                headStyles: {
+                    fillColor: [122, 122, 252],
+                    textColor: 255,
+                    fontStyle: 'bold',
+                },
+                alternateRowStyles: {
+                    fillColor: [240, 240, 240],
+                },
+                tableLineColor: [150, 150, 150],
+                tableLineWidth: 0.1,
+            });
+
+            // Add Footer
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Generated on ${formatDate(new Date())}`, pageWidth / 2, pageHeight - 30, { align: 'center' });
+
+            // Save the PDF
+            doc.save(`${studentId}_${firstName}_${lastName}_Student_Information.pdf`);
+        }
+
+        // Helper function to format dates
+        function formatDate(date) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date(date).toLocaleDateString(undefined, options);
+        }
+    </script>
+
 </body>
 </html>
