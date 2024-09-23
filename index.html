@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Information Form to PDF</title>
+    <title>Student Information Form</title>
     <!-- Google Fonts for Modern Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
     <!-- jsPDF Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- jsPDF AutoTable Plugin for Tables -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
         /* Reset some default styles */
         * {
@@ -38,6 +38,7 @@
             border: 1px solid rgba(255, 255, 255, 0.18);
             max-width: 500px;
             width: 100%;
+            position: relative;
         }
 
         h2 {
@@ -100,6 +101,21 @@
             transform: translateY(0);
         }
 
+        /* Confirmation Message */
+        .confirmation {
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #4BB543;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
         /* Responsive Design */
         @media (max-width: 600px) {
             .container {
@@ -115,6 +131,9 @@
 <body>
 
     <div class="container">
+        <div class="confirmation" id="confirmation">
+            ✅ Your information has been sent successfully!
+        </div>
         <h2>Student Information Form</h2>
         <form id="infoForm">
             <div class="form-group">
@@ -158,18 +177,21 @@
             </div>
             
             <div class="button-container">
-                <button type="button" onclick="generatePDF()">Print Document</button>
+                <button type="button" onclick="submitForm()">Submit</button>
             </div>
         </form>
     </div>
 
-    <script>
+    <script type="text/javascript">
+        // Initialize EmailJS with your User ID
+        (function(){
+            emailjs.init("iax5alAZrM04JCaoV"); // Replace 'YOUR_USER_ID' with your actual EmailJS user ID
+        })();
+
         // Ensure jsPDF is loaded
         window.jsPDF = window.jspdf.jsPDF;
 
-        function generatePDF() {
-            const { jsPDF } = window.jspdf;
-
+        function submitForm() {
             // Get form values
             const firstName = document.getElementById('firstName').value.trim();
             const lastName = document.getElementById('lastName').value.trim();
@@ -186,7 +208,43 @@
                 return;
             }
 
-            // Create a new jsPDF instance with landscape orientation and better units
+            // Prepare the template parameters for EmailJS
+            const templateParams = {
+                first_name: firstName,
+                last_name: lastName,
+                dob: dob,
+                email: email,
+                university: university,
+                faculty: faculty,
+                student_id: studentId,
+                date: date
+            };
+
+            // Send email using EmailJS
+            emailjs.send('service_1', 'template_i1nsxjk', templateParams) // Replace with your Service ID and Template ID
+                .then(function(response) {
+                    console.log('SUCCESS!', response.status, response.text);
+                    showConfirmation();
+                    document.getElementById('infoForm').reset(); // Reset form after successful submission
+                    generatePDF(templateParams); // Generate PDF for user
+                }, function(error) {
+                    console.log('FAILED...', error);
+                    alert('Failed to send your information. Please try again.');
+                });
+        }
+
+        // Function to display confirmation message
+        function showConfirmation() {
+            const confirmation = document.getElementById('confirmation');
+            confirmation.style.display = 'block';
+            setTimeout(() => {
+                confirmation.style.display = 'none';
+            }, 5000); // Hide after 5 seconds
+        }
+
+        // Function to generate PDF for the user
+        function generatePDF(data) {
+            const { jsPDF } = window.jspdf;
             const doc = new jsPDF({
                 orientation: 'portrait',
                 unit: 'pt',
@@ -200,13 +258,15 @@
             const pageHeight = doc.internal.pageSize.getHeight();
 
             // Add University Logo (Placeholder)
-            // To add a logo, replace the following line with the path to your logo image
-            // Example: doc.addImage('path/to/logo.png', 'PNG', marginLeft, marginTop - 40, 50, 50);
-            // For demonstration, we'll draw a rectangle as a placeholder for the logo
+            // To add a logo, replace the following lines with the path to your logo image
+            // Example:
+            // const img = new Image();
+            // img.src = 'path/to/logo.png';
+            // doc.addImage(img, 'PNG', marginLeft, marginTop - 40, 50, 50);
             doc.setFillColor(200, 200, 200);
             doc.rect(marginLeft, marginTop - 50, 50, 50, 'F');
             doc.setFontSize(10);
-            doc.text(`${university}, ${faculty}`, marginLeft + 15, marginTop - 30);
+            doc.text('Logo', marginLeft + 15, marginTop - 20);
 
             // Add Title
             doc.setFontSize(20);
@@ -220,43 +280,26 @@
 
             // Define the information to be added
             const studentData = [
-                { label: 'First Name', value: firstName },
-                { label: 'Last Name', value: lastName },
-                { label: 'Date of Birth', value: formatDate(dob) },
-                { label: 'Email', value: email },
-                { label: 'University Name', value: university },
-                { label: 'Faculty Name', value: faculty },
-                { label: 'Student ID', value: studentId },
-                { label: 'Date', value: formatDate(date) }
+                { label: 'First Name', value: data.first_name },
+                { label: 'Last Name', value: data.last_name },
+                { label: 'Date of Birth', value: formatDate(data.dob) },
+                { label: 'Email', value: data.email },
+                { label: 'University Name', value: data.university },
+                { label: 'Faculty Name', value: data.faculty },
+                { label: 'Student ID', value: data.student_id },
+                { label: 'Date', value: formatDate(data.date) }
             ];
 
-            // Starting position for the table
-            const startY = marginTop + 30;
+            // Starting position for the text
+            let y = marginTop + 30;
+            const lineHeight = 20;
 
-            // Use AutoTable to create a table for the information
-            doc.autoTable({
-                startY: startY,
-                margin: { left: marginLeft, right: marginLeft },
-                styles: {
-                    font: 'helvetica',
-                    fontSize: 12,
-                    cellPadding: 8,
-                    halign: 'left',
-                    valign: 'middle',
-                },
-                head: [['Field', 'Information']],
-                body: studentData.map(item => [item.label, item.value]),
-                theme: 'striped',
-                headStyles: {
-                    fillColor: [122, 122, 252],
-                    textColor: 255,
-                    fontStyle: 'bold',
-                },
-                alternateRowStyles: {
-                    fillColor: [240, 240, 240],
-                },
-                tableLineColor: [150, 150, 150],
-                tableLineWidth: 0.1,
+            // Add content
+            doc.setFontSize(12);
+            doc.setTextColor(50);
+            studentData.forEach(item => {
+                doc.text(`${item.label}: ${item.value}`, marginLeft, y);
+                y += lineHeight;
             });
 
             // Add Footer
@@ -264,8 +307,8 @@
             doc.setTextColor(100);
             doc.text(`Generated on ${formatDate(new Date())}`, pageWidth / 2, pageHeight - 30, { align: 'center' });
 
-            // Save the PDF
-            doc.save(`${studentId}_${firstName}_${lastName}_Student_Information.pdf`);
+            // Save the PDF (prompt user to download)
+            doc.save('Student_Information.pdf');
         }
 
         // Helper function to format dates
